@@ -9,3 +9,4 @@ config["databases"]["weekly"] = {}
 config["databases"]["monthly"] = {}
 
 config["backupPath"] = ""
+config["mysqldumpPath"] = ""
