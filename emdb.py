@@ -67,7 +67,6 @@ for schedule, subtbl in config["databases"].items():
 			fileName = backupName.format(schedule,targetDB,datetime.date.today())
 			db.pop(0)
 			targetTables = " ".join(db)
-			print( backupPath + schedule + '/' + fileName)
 			process = subprocess.Popen(shlex.split(executeString.format(config["user"], config["password"], targetDB, targetTables,  backupPath + schedule + '/' + fileName)))
 			while process.poll() != 0:
 				continue
