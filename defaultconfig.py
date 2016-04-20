@@ -1,3 +1,4 @@
+#Once set up, copy / rename this file to config.py!
 config = {}
 config["user"] = ""
 config["password"] = ""
