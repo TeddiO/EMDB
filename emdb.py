@@ -46,7 +46,7 @@ for schedule, subtbl in config["databases"].items():
 
 	#Perform cooldown checks.
 	curTime = int(time.time())
-	checkCooldown = conn.execute("SELECT timestamp FROM sqlcooldown WHERE cdtype = ?", [schedule, ])
+	checkCooldown = conn.execute("SELECT timestamp FROM sqlcooldown WHERE cdtype = ?", [schedule])
 	cooldown = checkCooldown.fetchone()
 	if cooldown is None:
 		conn.execute("INSERT INTO sqlcooldown (timestamp, cdtype) VALUES (?, ?)", ((curTime + subtbl["updateRate"]) or 0, schedule ))
