@@ -50,10 +50,10 @@ for schedule, subtbl in config["databases"].items():
 	checkCooldown = cursor.execute("SELECT (timestamp) FROM sqlcooldown WHERE cdtype=(?)", [schedule])
 	cooldown = checkCooldown.fetchone()
 	if cooldown is None:
-		cursor.execute("INSERT INTO sqlcooldown (timestamp, cdtype) VALUES (?, ?)", ((curTime + subtbl["updateRate"]) or 0, schedule ))
+		cursor.execute("INSERT INTO sqlcooldown (timestamp, cdtype) VALUES (?, ?)", ((curTime + subtbl["updateRate"] - 20 ) or 0, schedule ))
 		conn.commit()
 	elif cooldown[0] < curTime:
-		cursor.execute("UPDATE sqlcooldown SET timestamp = ? WHERE cdtype = ?", ((curTime + subtbl["updateRate"]) or 0, schedule))
+		cursor.execute("UPDATE sqlcooldown SET timestamp = ? WHERE cdtype = ?", ((curTime + subtbl["updateRate"]- 20) or 0, schedule))
 		conn.commit()
 	else:
 		continue
