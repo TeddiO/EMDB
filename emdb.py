@@ -15,7 +15,7 @@ as we've got specified cooldowns, the script can actually take care of the rest.
 if 'dbCooldownTracker' in config and config['dbCooldownTracker'] != "":
 	conn = sqlite3.connect(config["dbCooldownTracker"])
 else:
-	conn = sqlite3.connect('backuptracker.db')
+	conn = sqlite3.connect('backuptracker.db', timeout=5)
 cursor = conn.cursor()
 #this tableCheck query allows us to work with sqlite DB's older than ver 3.3.
 tableCheck = cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE name ='sqlcooldown' and type='table';")
@@ -23,9 +23,11 @@ if tableCheck.fetchone()[0] == 0:
 	cursor.execute('CREATE TABLE sqlcooldown (cdtype CHAR(10) PRIMARY KEY NOT NULL,timestamp INT NOT NULL DEFAULT 0);')
 
 #Allows you to specify your own backup path if the directory you're running the script in isn't ideal.
-backupPath = config["backupPath"] if "backupPath" in config and config["backupPath"] is not None else os.getcwd() + "/backups/"
+if "backupPath" in config and (config["backupPath"] is not ""):
+	backupPath = config["backupPath"]  
+else:
+	backupPath = os.getcwd() + "/backups/"
 
-print(backupPath)
 #Just ensuring the direcetory does exist. 
 if not os.path.isdir(backupPath):
 	os.makedirs(backupPath)
@@ -36,7 +38,6 @@ if 'mysqldumpPath' in config and config["mysqldumpPath"] != "":
 else:
 	executeString = "mysqldump -u {0} -p{1} {2} {3} --result-file={4}"
 
-
 for schedule, subtbl in config["databases"].items():
 
 	backupName = "{0}{1}{2}-backup.sql"
@@ -46,13 +47,13 @@ for schedule, subtbl in config["databases"].items():
 
 	#Perform cooldown checks.
 	curTime = int(time.time())
-	checkCooldown = conn.execute("SELECT timestamp FROM sqlcooldown WHERE cdtype = ?", [schedule])
+	checkCooldown = cursor.execute("SELECT (timestamp) FROM sqlcooldown WHERE cdtype=(?)", [schedule])
 	cooldown = checkCooldown.fetchone()
 	if cooldown is None:
-		conn.execute("INSERT INTO sqlcooldown (timestamp, cdtype) VALUES (?, ?)", ((curTime + subtbl["updateRate"]) or 0, schedule ))
+		cursor.execute("INSERT INTO sqlcooldown (timestamp, cdtype) VALUES (?, ?)", ((curTime + subtbl["updateRate"]) or 0, schedule ))
 		conn.commit()
 	elif cooldown[0] < curTime:
-		conn.execute("UPDATE sqlcooldown SET timestamp = ? WHERE cdtype = ?", ((curTime + subtbl["updateRate"]) or 0, schedule))
+		cursor.execute("UPDATE sqlcooldown SET timestamp = ? WHERE cdtype = ?", ((curTime + subtbl["updateRate"]) or 0, schedule))
 		conn.commit()
 	else:
 		continue
@@ -76,6 +77,9 @@ for schedule, subtbl in config["databases"].items():
 			process = subprocess.Popen(shlex.split(executeString.format(config["user"], config["password"], db, "",  backupPath + schedule + '/' + fileName)))
 			while process.poll() != 0:
 				continue
+
+cursor.close()
+conn.close()
 
 #Otherwise, all done!
 
