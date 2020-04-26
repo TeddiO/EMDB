@@ -3,7 +3,7 @@ A small Python 3 script that allows you to quickly and easily back up MySQL Data
 
 This small script came about as the result of having to back up multiple databases on one machine. What ended up being essentially duplicates of similar scripts have now been emalgimated into EMDB.
 
-##Setting up EMDB
+## Setting up EMDB
 EMDB is reasonably flexible when it comes to setting up various times for backing up databases. While the wording of "daily", "weekly" and "monthly" are in the default config file; you could literally use any name you wanted.
 
 EMDB relies on the idea of you knowing how long (in seconds) you want each backup to be taken. For example:
@@ -14,7 +14,7 @@ What the above will do is back up the database "my_database" every 24 hours (cro
 ```Python
 config["databases"]["daily"] = {"updateRate": 86400, "targetData": ["my_database", "my_database2", "my_databaseN"] }
 ```
-###Specifying Tables
+### Specifying Tables
 When we do backups, we don't always want to grab the entire database - but instead just aspects of it. Thankfully EMDB gives us a way to do this. By specifying a List with the first argument being the database we're after and the rest bein the tables we can grab what we need. For example: 
 ```Python
 config["databases"]["weekly"] = {"updateRate": 604800, "targetData": ["my_database", "my_database2", ["my_database3", "table1", "table2", "table3"], "my_database4"]}
