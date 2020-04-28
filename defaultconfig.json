@@ -1,0 +1,29 @@
+{
+    "user": "",
+    "password": "",
+    "backupPath": "",
+    "mysqldumpPath": "",
+
+
+    "databases": 
+    {
+
+        "daily": 
+        {
+
+        },
+
+        "weekly": 
+        {
+
+        },
+
+        "monthly": 
+        {
+
+        }           
+
+    }
+
+
+}

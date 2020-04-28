@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 
-import os, sys, subprocess, datetime, time, shlex, sqlite3
+import os, sys, subprocess, datetime, time, shlex, sqlite3, json
 from os import path
-from config import config
 
 '''
 Potentially there are two ways to manage backup scripts. One is a cronjob per timeframe (hourly / weekly / monthly etc) or instead, we can have a single file do the legwork.
@@ -29,10 +28,24 @@ def GenerateExecuteString(dictNamespace, strDumpExecutable, strGlobalRemoteHost 
 
 if __name__ == "__main__":
 	
-	if 'dbCooldownTracker' in config and config['dbCooldownTracker'] != "":
+	targetConfig = None
+	config = None
+	if len(sys.argv) > 2 and os.path.isfile(sys.argv[1]):
+		targetconfig = sys.argv[1]
+	else:
+		targetConfig = "config.json"
+
+	try:
+		with open(targetConfig) as f:
+			config = json.loads(f.read())
+	except FileNotFoundError as Error:
+		print(Error)
+		sys.exit(1)
+
+	if 'dbCooldownTracker' in config and config.get("dbCooldownTracker", "") != "":
 		conn = sqlite3.connect(config["dbCooldownTracker"])
 	else:
-		conn = sqlite3.connect('backuptracker.db', timeout=5)
+		conn = sqlite3.connect('backuptracker.db')
 	cursor = conn.cursor()
 
 	# Just in case we're having to work with sqlite older than 3.3...
@@ -40,10 +53,10 @@ if __name__ == "__main__":
 	if tableCheck.fetchone()[0] == 0:
 		cursor.execute('CREATE TABLE sqlcooldown (cdtype CHAR(10) PRIMARY KEY NOT NULL, timestamp INT NOT NULL DEFAULT 0);')
 	# Allows you to specify your own backup path if the directory you're running the script in isn't ideal.
-	if "backupPath" in config and (config["backupPath"] is not ""):
-		backupPath = config["backupPath"]  
+	if "backupPath" in config and (config.get("backupPath", "") is not ""):
+		backupPath = os.path.normpath(config["backupPath"])
 	else:
-		backupPath = os.getcwd() + "/backups/"
+		backupPath = os.path.normpath("{0}/backups".format(os.getcwd()))
 
 	if not os.path.isdir(backupPath):
 		os.makedirs(backupPath)
@@ -51,9 +64,10 @@ if __name__ == "__main__":
 	for namespace, subtbl in config["databases"].items():
 
 		backupName = "{0}{1}{2}-backup.sql"
+		finalBackupDir = os.path.join(backupPath, namespace)
 
-		if not os.path.isdir(backupPath + namespace):
-			os.makedirs(backupPath + namespace)
+		if not os.path.isdir(finalBackupDir):
+			os.makedirs(finalBackupDir)
 
 		curTime = int(time.time())
 		checkCooldown = cursor.execute("SELECT (timestamp) FROM sqlcooldown WHERE cdtype=(?)", [namespace])
@@ -77,13 +91,13 @@ if __name__ == "__main__":
 				fileName = backupName.format(namespace, targetDB, datetime.date.today())
 				db.pop(0)
 				targetTables = " ".join(db)
-				process = subprocess.Popen(shlex.split(executeString.format(config["user"], config["password"], targetDB, targetTables,  "{0}{1}/{2}".format(backupPath, namespace, fileName))))
+				process = subprocess.Popen(shlex.split(executeString.format(config["user"], config["password"], targetDB, targetTables, os.path.join(finalBackupDir, fileName))))
 				while process.poll() != 0:
 					continue
 			else:
 				#Bog standard backup. 
 				fileName = backupName.format(namespace, db,datetime.date.today())
-				process = subprocess.Popen(shlex.split(executeString.format(config["user"], config["password"], db, "",  "{0}{1}/{2}".format(backupPath, namespace, fileName))))
+				process = subprocess.Popen(shlex.split(executeString.format(config["user"], config["password"], db, "", os.path.join(finalBackupDir, fileName))))
 				while process.poll() != 0:
 					continue
 
