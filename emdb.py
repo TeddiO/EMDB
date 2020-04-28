@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
-import os, sys, subprocess, datetime, time, shlex, sqlite3, json
-from os import path
+import os, sys, subprocess, datetime, time, shlex, sqlite3, json, gzip, shutil
 
 '''
 Potentially there are two ways to manage backup scripts. One is a cronjob per timeframe (hourly / weekly / monthly etc) or instead, we can have a single file do the legwork.
@@ -25,6 +24,16 @@ def GenerateExecuteString(dictNamespace, strDumpExecutable, strGlobalRemoteHost 
 
 	return  "{0} {1}".format(strDumpExecutable, baseExecuteString)
 
+def CompressFiles(filePath):
+
+	try:
+		with open(filePath, 'rb') as fInput:
+			with gzip.open(filePath + ".gz", "wb") as fOutput:
+				shutil.copyfileobj(fInput, fOutput)
+	except Exception as Error:
+		print(Error)
+	else:
+		os.remove(filePath)
 
 if __name__ == "__main__":
 	
@@ -91,15 +100,27 @@ if __name__ == "__main__":
 				fileName = backupName.format(namespace, targetDB, datetime.date.today())
 				db.pop(0)
 				targetTables = " ".join(db)
-				process = subprocess.Popen(shlex.split(executeString.format(config["user"], config["password"], targetDB, targetTables, os.path.join(finalBackupDir, fileName))))
+				finalPath = os.path.join(finalBackupDir, fileName)
+				process = subprocess.Popen(shlex.split(executeString.format(config["user"], config["password"], targetDB, targetTables, finalPath)))
 				while process.poll() != 0:
 					continue
+
+				if config.get("noCompress", False) or subtbl.get("noCompress", False):
+					continue
+
+				CompressFiles(finalPath)
 			else:
 				#Bog standard backup. 
 				fileName = backupName.format(namespace, db,datetime.date.today())
-				process = subprocess.Popen(shlex.split(executeString.format(config["user"], config["password"], db, "", os.path.join(finalBackupDir, fileName))))
+				finalPath = os.path.join(finalBackupDir, fileName)
+				process = subprocess.Popen(shlex.split(executeString.format(config["user"], config["password"], db, "", finalPath)))
 				while process.poll() != 0:
 					continue
+
+				if config.get("noCompress", False) or subtbl.get("noCompress", False):
+					continue
+				
+				CompressFiles(finalPath)
 
 	cursor.close()
 	conn.close()
