@@ -22,7 +22,7 @@ def GenerateExecuteString(dictNamespace, strDumpExecutable, strGlobalRemoteHost 
 	if strGlobalRemoteHost is not None:
 		return "{0} -h {1} {2}".format(strDumpExecutable, strGlobalRemoteHost, baseExecuteString)
 
-	return  "{0} {1}".format(strDumpExecutable, baseExecuteString)
+	return "{0} {1}".format(strDumpExecutable, baseExecuteString)
 
 def CompressFiles(filePath):
 
@@ -39,8 +39,8 @@ if __name__ == "__main__":
 	
 	targetConfig = None
 	config = None
-	if len(sys.argv) > 2 and os.path.isfile(sys.argv[1]):
-		targetconfig = sys.argv[1]
+	if len(sys.argv) > 1 and os.path.isfile(sys.argv[1]):
+		targetConfig = sys.argv[1]
 	else:
 		targetConfig = "config.json"
 
